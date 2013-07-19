@@ -1,7 +1,0 @@
-(ns froid.core-test
-  (:use clojure.test
-        froid.core))
-
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
