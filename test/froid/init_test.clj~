@@ -1,0 +1,4 @@
+(ns froid.init-test
+  (:use clojure.test)
+  (:require froid.init))
+
