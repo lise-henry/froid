@@ -27,13 +27,13 @@
        (str mn "'" s "\"" cs)))
 
 (defn time-diff
-  [driver best]
-  """(Driver, double) -> String
-     Given a driver and a best time, returns a string containing
-     the difference with first driver"""
-     (let [t (/ (- (:time driver) best) 10)]
+  "(Driver, double) -> String
+   Given a time and a best time, returns a string containing
+   the difference with first driver"
+  [time best]
+     (let [t (/ (- time best) 10)]
        (if (zero? t)
-         (format-time (:time driver))
+         (format-time time)
          (str "+" (format-time t)))))
          
 

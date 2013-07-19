@@ -1,9 +1,8 @@
 (ns froid.gui
   (:use [froid.ascii]
         [froid.core]
-        [froid.circuit]))
-
-(def ^:private main-frame (javax.swing.JFrame. "FROID"))
+        [froid.circuit]
+        [froid.init]))
 
 (defn- prompt-name
   [title, text]
@@ -36,24 +35,43 @@
                  nil
                  (recur (conj v name) (inc i)))))))))
 
+(defn init-all
+  [n-teams n-drivers]
+  """(int int) -> data
+     Returns a list of teams and a list of drivers.
+     There is n-teams (plus player's one) and n-drivers by team."""
+  (let [teams (teams-generator n-teams n-drivers)
+        player-team (froid.gui/prompt-names n-drivers)
+        player-name (first (keys player-team))
+        teams (into teams player-team)]
+    (if (nil? player-team)
+      nil
+      {:teams teams
+       :drivers (drivers-generator-from-teams teams
+                                              player-name)})))
 
-(defn update-rankings!
-  [model drivers]
-  """(AbstractTableModel, Drivers) -> AbstractTableModel
+
+(defn rankings!
+  "(AbstractTableModel, Drivers, bool) -> AbstractTableModel
     Update the table model with appropriate data and headers.
-    Returns the model."""
-    (let [data (map #(vector (inc %1)
-                             (:name %2)
-                             (:team %2)
-                             (time-diff %2
-                                        (:time (first drivers))))
-                    (range)
-                    drivers)
-          headers ["Pos" "Name" "Team" "Time"]]
-      (.setDataVector model
-                      (to-array-2d data)
-                      (into-array headers))
-      model))
+    Returns the model."
+  ([model drivers]
+     (rankings! model drivers :time))
+  ([model drivers stat]
+     (let [data (map #(vector (inc %1)
+                              (:name %2)
+                              (:team %2)
+                              (time-diff (stat %2)
+                                         (stat (first drivers))))
+                     (range)
+                     drivers)
+           headers (if (= stat :points) 
+                          ["Pos" "Name" "Team" "Points"]
+                          ["Pos" "Name" "Team" "Time"])]
+       (.setDataVector model
+                       (to-array-2d data)
+                       (into-array headers))
+       model)))
 
 ;; (defn edit-driver
 ;;   [driver]
@@ -63,118 +81,165 @@
      
 
 (defn display-character-panel!
+  "(Character, JPanel) -> ()
+   Displays the driver stats in appropriate component"
   [component driver]
-  """(Character, JPanel) -> ()
-     Displays the driver stats in appropriate component"""
-     (let [editable (and 
-                     (:player driver)
-                     (> (:xp driver)
-                        0))
-           panel (javax.swing.JPanel.)
-           layout (javax.swing.BoxLayout. panel javax.swing.BoxLayout/Y_AXIS)]
-       (.setLayout panel layout)
-       (.add component panel)
-       (doseq [[k v] driver]
-         (let [label (javax.swing.JLabel. (str k ": " v))]
-         (.add panel
-               (if editable
-                 (let [line-panel (javax.swing.JPanel. )
-                       layout (javax.swing.BoxLayout.
-                               line-panel javax.swing.BoxLayout/X_AXIS)
-                       button (javax.swing.JButton. "+")]
-                   (.addActionListener 
-                    button
-                    (proxy [java.awt.event.ActionListener] []
-                      (actionPerformed [e] 
-                        (let [character (raise-stat driver
-                                                    k)]
-                          (spit "/tmp/miaou.clj"
-                                (assoc-in 
-                                 (read-string (slurp "/tmp/miaou.clj"))
+  (let [editable (and 
+                  (:player driver)
+                  (> (:xp driver)
+                     0))
+        panel (javax.swing.JPanel.)
+        layout (javax.swing.BoxLayout. panel javax.swing.BoxLayout/Y_AXIS)]
+    (.setLayout panel layout)
+    (.add component panel)
+    (doseq [[k v] driver]
+      (let [label (javax.swing.JLabel. (str k ": " v))]
+        (.add panel
+              (if editable
+                (let [line-panel (javax.swing.JPanel. )
+                      layout (javax.swing.BoxLayout.
+                              line-panel javax.swing.BoxLayout/X_AXIS)
+                      button (javax.swing.JButton. "+")]
+                  (.addActionListener 
+                   button
+                   (proxy [java.awt.event.ActionListener] []
+                     (actionPerformed [e] 
+                       (let [character (raise-stat driver
+                                                   k)]
+                         (spit "/tmp/miaou.clj"
+                               (assoc-in 
+                                (read-string (slurp "/tmp/miaou.clj"))
                                  [:drivers (:name character)]
                                  character))
-                          (.remove component panel)
-                          (display-character-panel! component
-                                                    character)
-                          (.pack component)))))
-                   (doto line-panel
-                     (.setLayout layout)
-                     (.add label)
-                     (.add button)))
-                 label))))))
+                         (.remove component panel)
+                         (display-character-panel! component
+                                                   character)
+                         (.pack component)))))
+                  (doto line-panel
+                    (.setLayout layout)
+                    (.add label)
+                    (.add button)))
+                label))))))
 
 (defn display-character
+  "Driver -> ()
+   Display the driver's stats in a new window"
   [driver]
-  """Driver -> ()
-     Display the driver's stats in a new window"""
-     (let [frame (javax.swing.JFrame. (:name driver))]
-       (doto frame
-         (display-character-panel! driver)
-         (.pack)
-         (.setVisible true))))
- 
+  (let [frame (javax.swing.JFrame. (:name driver))]
+    (doto frame
+      (display-character-panel! driver)
+      (.pack)
+      (.setVisible true))))
+
 (defn create-gui
-  [characters]
-  """() -> (JPanel, (label, drivers) -> ()))
+  "() -> (JPanel, (label, drivers) -> ()))
      Returns a vector containing: 
      - a panel to add in a JFrame
-     - an update function running a lap and updating given panel"""
-     (let [panel (javax.swing.JPanel.)
-           label (javax.swing.JLabel.)
-           model (javax.swing.table.DefaultTableModel.)
-           table (javax.swing.JTable. model)
-           scroll-pane (javax.swing.JScrollPane. table)
-           panel (doto panel
-                   (.setLayout (javax.swing.BoxLayout.
-                                panel
-                                javax.swing.BoxLayout/Y_AXIS))
-                   (.add label)
-                   (.add scroll-pane))
-           update-fn (fn [text drivers]
-                       (.setText label text)
-                       (update-rankings! model drivers))]
-       (.addMouseListener table
-                          (proxy [java.awt.event.MouseAdapter] []
-                              (mouseClicked [e]
-                                (let [point (.getPoint e)
-                                      row (.rowAtPoint table point)
-                                      name (str (.getValueAt 
-                                                 table
-                                                 row
-                                                 1))]
-                                  (;; todo: baaaaaaaaad
-                                   (display-character
-                                    (((read-string 
-                                       (slurp "/tmp/miaou.clj")) 
-                                      :drivers)
-                                     name)))))))
-       [panel, update-fn]))
+     - an update function running a lap and updating given panel"
+  [characters]
+  (let [panel (javax.swing.JPanel.)
+        label (javax.swing.JLabel.)
+        model (javax.swing.table.DefaultTableModel.)
+        table (javax.swing.JTable. model)
+        scroll-pane (javax.swing.JScrollPane. table)
+        panel (doto panel
+                (.setLayout (javax.swing.BoxLayout.
+                             panel
+                             javax.swing.BoxLayout/Y_AXIS))
+                (.add label)
+                (.add scroll-pane))
+        update-fn (fn [text drivers]
+                    (.setText label text)
+                    (let [stat (condp = text
+                                 "Qualifications" :lap-time
+                                 "Championship" :points
+                                 :time)]
+                      (rankings! model drivers stat)))]
+    (.addMouseListener table
+                       (proxy [java.awt.event.MouseAdapter] []
+                         (mouseClicked [e]
+                           (let [point (.getPoint e)
+                                 row (.rowAtPoint table point)
+                                 name (str (.getValueAt 
+                                            table
+                                            row
+                                            1))]
+                             (;; todo: baaaaaaaaad
+                              (display-character
+                               (((read-string 
+                                  (slurp "/tmp/miaou.clj")) 
+                                 :drivers)
+                                name)))))))
+    [panel, update-fn]))
+
+(defn run-race
+  "JFrame -> ()
+   Runs a race and displays it in the frame"
+  [frame]
+  (let [characters (vals ((read-string (slurp "/tmp/miaou.clj")) :drivers))
+        drivers (map froid.core/character->Driver characters)
+        circuit (froid.circuit/random-circuit)
+        drivers (sort-by :lap-time 
+                         (map #(qual-time % circuit) 
+                              drivers))
+        [panel update!] (froid.gui/create-gui characters)
+        toto (fn toto [l drivers]
+               (update! (str "Lap " (inc l)) drivers)
+               (if (< l 49)
+                 (let [timer (javax.swing.Timer. 1000
+                                                 (proxy [java.awt.event.ActionListener] []
+                                                   (actionPerformed [e]
+                                                     (toto (inc l) (froid.circuit/time-step drivers circuit)))))]
+                   (.setRepeats timer false)
+                   (.start timer))
+                 (let [button (javax.swing.JButton. "New race")]
+                   (.addActionListener button
+                                       (proxy [java.awt.event.ActionListener] []
+                                         (actionPerformed [e]
+                                           (run-race frame))))
+                   (.add panel button))))]
+    (.removeAll (.getContentPane frame))
+    (.add (.getContentPane frame) panel)
+    (.pack frame)
+    (update! "Qualifications" drivers)
+    (let [button (javax.swing.JButton. "Start race!")]
+      (.addActionListener button
+                          (proxy [java.awt.event.ActionListener] []
+                            (actionPerformed [e]
+                              (.remove panel button)
+                              (toto 0 (froid.circuit/time-step drivers circuit)))))
+      (.add panel button))))
+
 
 (defn gui-main
   []
   """() -> ()
-     Main function launching the GUI"""
-     (let [;;drivers (map froid.core/character->Driver (vals ((froid.init/init-all 5 3) :drivers)))
-           characters (vals ((read-string (slurp "/tmp/miaou.clj")) :drivers))
-           drivers (map froid.core/character->Driver characters)
-           circuit (froid.circuit/random-circuit)
-           drivers (sort-by :lap-time 
-                            (map #(qual-time % circuit) 
-                                 drivers))
-           [panel update!] (froid.gui/create-gui characters)]
-    (doto main-frame
-      (.setDefaultCloseOperation javax.swing.JFrame/EXIT_ON_CLOSE)
-      (.add panel)
-      (.pack)
-      (.setVisible true))
-    (update! "Qualifications" drivers)
-    (Thread/sleep 2000)
-    (loop [drivers drivers
-           l 0]
-        (if (>= l 50)
-          (update! "Results" drivers)
-          (do
-            (update! (str l) drivers)
-            (Thread/sleep 1000)
-            (recur (froid.circuit/time-step drivers circuit) (inc l)))))))
-       
+     Main function launching the GUI
+  """
+;;drivers (map froid.core/character->Driver (vals ((froid.init/init-all 5 3) :drivers)))
+  (let [frame (javax.swing.JFrame. "FROID")
+        button-race (javax.swing.JButton. "Run race")
+        button-new (javax.swing.JButton. "New")
+        panel (javax.swing.JPanel.)]
+    (.addActionListener button-new
+                        (proxy [java.awt.event.ActionListener] []
+                          (actionPerformed [e]
+                            (spit "/tmp/miaou.clj" (init-all 7 3)))))
+    (.addActionListener button-race
+                        (proxy [java.awt.event.ActionListener] []
+                          (actionPerformed [e]
+                            (run-race frame))))
+    (.add (.getContentPane frame) panel)
+    (doto panel
+      (.add button-new)
+      (.add button-race))
+    (doto frame
+     (.setDefaultCloseOperation javax.swing.JFrame/EXIT_ON_CLOSE)
+     (.pack)
+     (.setVisible true))))
+
+
+
+
+
+

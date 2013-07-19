@@ -1,6 +1,5 @@
 (ns froid.init
-  (:require [froid.core]
-            [froid.gui]))
+  (:require [froid.core]))
 
 (def ^:private driver-first-names
   ;; list of first names for random generator
@@ -102,7 +101,7 @@
       (assoc :player true)))
 
 
-(defn- drivers-generator-from-teams
+(defn drivers-generator-from-teams
   [teams player-team]
   """Randomly (except for player's team) generate a list of drivers from a team map 
      (as returned by teams-generator)"""
@@ -114,17 +113,3 @@
                  (map #(array-map % (random-character-generator % team))
                       drivers)))))
 
-(defn init-all
-  [n-teams n-drivers]
-  """(int int) -> data
-     Returns a list of teams and a list of drivers.
-     There is n-teams (plus player's one) and n-drivers by team."""
-  (let [teams (teams-generator n-teams n-drivers)
-        player-team (froid.gui/prompt-names n-drivers)
-        player-name (first (keys player-team))
-        teams (into teams player-team)]
-    (if (nil? player-team)
-      nil
-      {:teams teams
-       :drivers (drivers-generator-from-teams teams
-                                              player-name)})))
