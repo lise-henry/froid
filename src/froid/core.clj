@@ -99,7 +99,7 @@
   """(character, keyword) -> character
      Try to raise a stat, if there is enough XP"""
   (let [xp (get character :xp 0)
-        value (character staaat)
+        value (character stat)
         cost 1]
     (if (or (nil? value)
             (nil? cost))

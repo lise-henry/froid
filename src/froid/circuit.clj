@@ -1,6 +1,5 @@
 (ns froid.circuit
-  (:require [froid.ascii]
-            [froid.gui])
+  (:require [froid.ascii])
   (:use [froid.core])
   (:import [java.lang.Thread]))
 
@@ -116,49 +115,8 @@
            drivers
            (recur (inc x) (try-overtakes drivers))))))
 
-;;    
-
-
-(defn plop
-  [& args]
-  (let [;;drivers (map froid.core/character->Driver (vals ((froid.init/init-all 5 3) :drivers)))
-        characters (vals ((read-string (slurp "/tmp/miaou.clj")) :drivers))
-        drivers (map froid.core/character->Driver characters)
-        circuit (froid.circuit/random-circuit)
-        drivers (sort-by :lap-time 
-                         (map #(qual-time % circuit) 
-                              drivers))
-        frame (javax.swing.JFrame.)
-        [panel update!] (froid.gui/create-gui characters)]
-    (doto frame
-      (.setDefaultCloseOperation javax.swing.JFrame/EXIT_ON_CLOSE)
-      (.add panel)
-      (.pack)
-      (.setVisible true))
-    (update! "Qualifications" drivers)
-    (Thread/sleep 2000)
-    (loop [drivers drivers
-           l 0]
-        (if (>= l 50)
-          (update! "Results" drivers)
-          (do
-            (update! (str l) drivers)
-            (froid.ascii/print-drivers drivers)
-            (Thread/sleep 1000)
-            (doseq [_ (range 1 4)] (println ""))
-            (println (str "Lap: " l))
-            (recur (froid.circuit/time-step drivers circuit) (inc l)))))))
-
-
-
-
-
-
-
-
 ;; now useless ???
 
-'k@
 (defn- assoc-range
   [vec [low high] value]
   """For vectors, like assoc, but with a range of indices"""

@@ -1,6 +1,9 @@
 (ns froid.gui
   (:use [froid.ascii]
-        [froid.core]))
+        [froid.core]
+        [froid.circuit]))
+
+(def ^:private main-frame (javax.swing.JFrame. "FROID"))
 
 (defn- prompt-name
   [title, text]
@@ -147,6 +150,31 @@
                                      name)))))))
        [panel, update-fn]))
 
-
-
+(defn gui-main
+  []
+  """() -> ()
+     Main function launching the GUI"""
+     (let [;;drivers (map froid.core/character->Driver (vals ((froid.init/init-all 5 3) :drivers)))
+           characters (vals ((read-string (slurp "/tmp/miaou.clj")) :drivers))
+           drivers (map froid.core/character->Driver characters)
+           circuit (froid.circuit/random-circuit)
+           drivers (sort-by :lap-time 
+                            (map #(qual-time % circuit) 
+                                 drivers))
+           [panel update!] (froid.gui/create-gui characters)]
+    (doto main-frame
+      (.setDefaultCloseOperation javax.swing.JFrame/EXIT_ON_CLOSE)
+      (.add panel)
+      (.pack)
+      (.setVisible true))
+    (update! "Qualifications" drivers)
+    (Thread/sleep 2000)
+    (loop [drivers drivers
+           l 0]
+        (if (>= l 50)
+          (update! "Results" drivers)
+          (do
+            (update! (str l) drivers)
+            (Thread/sleep 1000)
+            (recur (froid.circuit/time-step drivers circuit) (inc l)))))))
        
