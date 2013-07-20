@@ -16,8 +16,8 @@
         hard (rand)
         total (+ straight soft hard)
         straight (/ straight total)
-        soft (/ straight total)
-        hard (/ straight total)
+        soft (/ soft  total)
+        hard (/ hard total)
         overtakes (rand-range 1 5)]
     {:length length
      :straight straight
