@@ -128,11 +128,13 @@
         character))))
       
 (defn raise-stats-random
+  "character -> character
+   Raise stats at random for IA while there is XP"
   [character]
-  """character -> character
-     Raise stats at random (ie. for IA) while there is XP"""
-  (let [xp (get character :xp 0)
-        stats (keys character-driver-stats)]
-    (if (pos? xp)
-          (recur (raise-stat character (first (shuffle stats))))
-          character)))
+  (if (:player character)
+    character
+    (let [xp (get character :xp 0)
+          stats (keys character-driver-stats)]
+      (if (pos? xp)
+        (recur (raise-stat character (first (shuffle stats))))
+        character))))

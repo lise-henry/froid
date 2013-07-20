@@ -61,8 +61,10 @@
      (let [data (map #(vector (inc %1)
                               (:name %2)
                               (:team %2)
-                              (time-diff (stat %2)
-                                         (stat (first drivers))))
+                              (if (= stat :points)
+                                (stat %2)
+                                (time-diff (stat %2)
+                                           (stat (first drivers)))))
                      (range)
                      drivers)
            headers (if (= stat :points) 
@@ -136,7 +138,7 @@
      Returns a vector containing: 
      - a panel to add in a JFrame
      - an update function running a lap and updating given panel"
-  [characters]
+  []
   (let [panel (javax.swing.JPanel.)
         label (javax.swing.JLabel.)
         model (javax.swing.table.DefaultTableModel.)
@@ -169,6 +171,28 @@
                                (((get-data) :drivers) name)))))))
     [panel, update-fn]))
 
+(declare run-race)
+
+(defn champ-rankings
+  "([panel, updatefn], drivers) -> ()
+   Calculate championship results and displays them in the frame"
+  [frame drivers]
+  (let [[panel update!] (create-gui)
+        data (post-race drivers (get-data))
+        button (javax.swing.JButton. "New race")]
+    (set-data! data)
+    (update! "Championship" (reverse (sort-by :points
+                                              (vals (:drivers data)))))
+    (.addActionListener button
+                        (proxy [java.awt.event.ActionListener] []
+                          (actionPerformed [e]
+                            (run-race frame))))
+    (.removeAll (.getContentPane frame))
+    (.add panel button)
+    (.add (.getContentPane frame) panel)
+    (.pack frame)))
+
+
 (defn run-race
   "JFrame -> ()
    Runs a race and displays it in the frame"
@@ -176,26 +200,26 @@
   (let [characters (vals ((get-data) :drivers))
         drivers (map froid.core/character->Driver characters)
         circuit (froid.circuit/random-circuit)
-        drivers (sort-by :lap-time 
+        drivers (vec (sort-by :lap-time 
                          (map #(qual-time % circuit) 
-                              drivers))
-        [panel update!] (froid.gui/create-gui characters)
+                              drivers)))
+        [panel update!] (create-gui)
         toto (fn toto [l drivers]
-               (if (= l 49)
-                 (update! "Race results" drivers)
-                 (update! (str "Lap " (inc l)) drivers))
                (if (< l 49)
-                 (let [timer (javax.swing.Timer. 1000
+                 (let [timer (javax.swing.Timer. 10
                                                  (proxy [java.awt.event.ActionListener] []
                                                    (actionPerformed [e]
                                                      (toto (inc l) (froid.circuit/time-step drivers circuit)))))]
+                   (update! (str "Lap " (inc l)) drivers)
                    (.setRepeats timer false)
                    (.start timer))
-                 (let [button (javax.swing.JButton. "New race")]
+                 (let [button (javax.swing.JButton. "Championship results")]
+                   (update! "Race results" drivers)
                    (.addActionListener button
                                        (proxy [java.awt.event.ActionListener] []
                                          (actionPerformed [e]
-                                           (run-race frame))))
+                                           (.remove panel button)
+                                           (champ-rankings frame drivers))))
                    (.add panel button))))]
     (.removeAll (.getContentPane frame))
     (.add (.getContentPane frame) panel)
