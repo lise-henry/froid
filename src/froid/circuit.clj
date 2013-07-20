@@ -71,8 +71,9 @@
         take-ratio (* (rand-froid (:overtake d1))
                       (rand-froid (:block d0)))
         p (* time-ratio take-ratio)
-        x (* (rand) 1.2)] ;; TODO: tune or set to config elsewhere
-    (if (> x p)
+        x (* (rand) 1.0)] ;; TODO: tune or set to config elsewhere
+    (if (or (> x p)
+            (= (:team d0) (:team d1)))
       ;; overtake succesful, swap indices
       (do
         (println (:name d1) "overtakes" (:name d0))
@@ -82,7 +83,7 @@
         (assoc drivers i 
                (assoc d1 :time 
                       (+ (:time d0)
-                         (/ 1.0 take-ratio))))))))
+                         take-ratio)))))))
 
 (defn try-overtakes
   "Drivers -> Drivers

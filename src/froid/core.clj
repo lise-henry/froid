@@ -75,7 +75,7 @@
                    lap-time])
                    
                    
-(def ^:private character-driver-stats
+(def character-driver-stats
   ;; map to converts stats to "machine-friendly" stats
   ;; (ie, only do extensive computation once)
   ;; used by character->Driver

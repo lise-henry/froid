@@ -97,7 +97,8 @@
     (doseq [[k v] driver]
       (let [label (javax.swing.JLabel. (str k ": " v))]
         (.add panel
-              (if editable
+              (if (and editable
+                       (k character-driver-stats))
                 (let [line-panel (javax.swing.JPanel. )
                       layout (javax.swing.BoxLayout.
                               line-panel javax.swing.BoxLayout/X_AXIS)
@@ -206,7 +207,7 @@
         [panel update!] (create-gui)
         toto (fn toto [l drivers]
                (if (< l 49)
-                 (let [timer (javax.swing.Timer. 10
+                 (let [timer (javax.swing.Timer. 1000
                                                  (proxy [java.awt.event.ActionListener] []
                                                    (actionPerformed [e]
                                                      (toto (inc l) (froid.circuit/time-step drivers circuit)))))]
