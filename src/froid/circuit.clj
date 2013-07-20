@@ -18,12 +18,14 @@
         straight (/ straight total)
         soft (/ soft  total)
         hard (/ hard total)
-        overtakes (rand-range 1 5)]
+        overtakes (rand-range 1 5)
+        security (rand-range 100 300)]
     {:length length
      :straight straight
      :soft soft
      :hard hard
-     :overtakes overtakes}))
+     :overtakes overtakes
+     :security security}))
 
 (defn lap-time
   "(Driver, circuit) -> double
@@ -58,6 +60,20 @@
       :lap-time t 
       :time (+ (:time driver) t))))
 
+(defn test-crash
+  "(Driver, circuit) -> Driver
+   Updates :alive field if driver crashes"
+  [driver circuit]
+  {:pre [(:alive? driver)]}
+  (let [p (* (/ 1.0 (:security circuit))
+             (:skill-crash driver))
+        x (rand)]
+    (if (< x p)
+      (assoc driver :alive? false)
+      driver)))
+                
+             
+
 (defn try-overtake
   "(Drivers, int) -> Drivers
    i is the number of the driver trying to overtake the preceding one
@@ -76,6 +92,7 @@
             (= (:team d0) (:team d1)))
       ;; overtake succesful, swap indices
       (do
+
         (println (:name d1) "overtakes" (:name d0))
         (assoc drivers (dec i) d1 i d0))
       ;; overtake failed, adjust second driver time
@@ -89,7 +106,7 @@
   "Drivers -> Drivers
    Apply try-overtake above on a sorted list of drivers"
   [drivers]
-  {:pre [(vector? drivers)]}
+  {:pre [(vector? drivers) (> (count drivers) 0)]}
   (let [n (count drivers)]
     ;; loop to only swap positions when one driver
     ;; suceeds overtaking the preceding one
@@ -111,7 +128,11 @@
   ;; update time after this lap
   (let [drivers (vec (map #(new-time % circuit)
                           drivers))
+        drivers (vec (filter :alive?
+                             (map #(test-crash % circuit)
+                                  drivers)))
         n (:overtakes circuit)]
+    (println drivers)
     (loop [x 0
            drivers drivers]
       (if (= x n)
@@ -140,102 +161,3 @@
                             (update-in [:points] + pts)
                             (update-in [:xp] + xp)
                             raise-stats-random))))))))
-;; now useless ???
-
-(defn- assoc-range
-  [vec [low high] value]
-  """For vectors, like assoc, but with a range of indices"""
-  (if (> low high)
-    vec
-    (recur (assoc vec low value) [(inc low) high] value)))
-
-
-(defn evaluate-correctly?
-  [driver]
- ' """Return true if driver is able to evaluate a pos correctly,
-     false else"""
-     (if (> (rand) (/ 0.1 (driver :driving)))
-       true
-       false))
-
-(defn reasonable-speed
-  [driver circuit pos]
-  """Return the max viable (perceived) speed at a location on a circuit
-     according to a driver's capacites"""
-     (let [{adherence :adherence
-            max-speed :max-speed} driver
-           pos (mod pos (count circuit))
-           speed (circuit pos)]
-         (if (nil? speed)
-           max-speed
-           (+ speed adherence))))
-
-(defn crash? 
-  [driver circuit speed [low high]]
-  """Return the first crash pos if the driver crashes between that set of pos, 
-     false else"""
-     (loop [x low]
-       (if (> x high)
-         false
-         (if (> speed (reasonable-speed driver circuit x))
-           (do 
-             x)
-           (recur (inc x))))))
-
-(defn evaluate-crash
-  [driver circuit speed [low high]]
-  """Same as crash?, but not reliable"""
-  (let [ret (crash? driver circuit speed [low high])]
-    (if (evaluate-correctly? driver)
-      ret
-      (not ret))))
-      
-(defn reasonable-perceived-speed
-  [driver circuit pos]
-  """Return the reasonable speed, plus a random bias of the observer"""
-  (let [s (reasonable-speed driver circuit pos)]
-    (if (evaluate-correctly? driver)
-      s
-      (rand-range (dec s) (inc s)))))
-
-(defn adjust-speed
-  [driver circuit]
-  """Return an updated structure where the driver speed
-    is adapted to the location on the circuit"""
-    (let [{x :current-pos
-           speed :current-speed
-           adherence :adherence
-           brake :brake
-           acceleration :acceleration
-           max-speed :max-speeed
-           driving :driving
-           pos :current-pos} driver
-          anticipation (inc (int (/ speed brake)))
-          x (inc x)]
-      (loop [new-speed (+ speed acceleration)]
-        (if (<= new-speed (- speed brake))
-          (assoc driver :current-speed new-speed)
-          ;; avoid crashing this turn... and following
-          (if (or 
-               (evaluate-crash driver circuit new-speed
-                               [(inc pos)
-                                (+ pos new-speed)])
-               (evaluate-crash driver circuit (- new-speed brake)
-                               [(+ pos new-speed)
-                                (- (+ pos new-speed new-speed)
-                                   brake)]))
-            (recur (dec new-speed))
-            (assoc driver :current-speed new-speed))))))
-
-(defn manage-crash
-  [driver]
-  """See if a driver avoids losing HP or not"""
-  (if (> (rand) (/ 1.0 (driver :driving)))
-    (do 
-      (println (str (driver :name) " avoided crash"))
-      driver)
-    (do
-      (println (driver :name) "crashes")
-      (-> driver
-          (assoc :hp (dec (driver :hp)))
-          (assoc :current-speed 0)))))

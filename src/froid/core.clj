@@ -72,7 +72,8 @@
                    skill-crash
                    speed
                    time
-                   lap-time])
+                   lap-time
+                   alive?])
                    
                    
 (def character-driver-stats
@@ -92,6 +93,7 @@
   (into character-driver-stats
         {:time (constantly 0)
          :lap-time (constantly 0)
+         :alive? (constantly true)
          :name identity
          :team identity}))
 

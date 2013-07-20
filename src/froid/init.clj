@@ -86,7 +86,7 @@
   (-> default-character
       (assoc :name name)
       (assoc :team team)
-      (assoc :xp (froid.core/rand-range 20 40))
+      (assoc :xp (froid.core/rand-range 10 20))
       froid.core/raise-stats-random))
 
 
