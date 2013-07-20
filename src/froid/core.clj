@@ -1,5 +1,20 @@
 (ns froid.core)
 
+(defn set-data!
+  "Map -> Map
+   Save the data to memory and/or file"
+  ;; TODO: very very very ugly
+  [data]
+  (spit "/tmp/miaou.clj" data)
+  data)
+
+(defn get-data
+  "() -> Map
+   Get the data from memory or file"
+  ;; TODO: very ugly
+  []
+  (read-string (slurp "/tmp/miaou.clj")))
+
 (defn rand-range
   [low high]
   {:pre [(number? low) (number? high)]}

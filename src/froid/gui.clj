@@ -106,11 +106,11 @@
                      (actionPerformed [e] 
                        (let [character (raise-stat driver
                                                    k)]
-                         (spit "/tmp/miaou.clj"
-                               (assoc-in 
-                                (read-string (slurp "/tmp/miaou.clj"))
-                                 [:drivers (:name character)]
-                                 character))
+                         (set-data!
+                          (assoc-in 
+                           (get-data)
+                           [:drivers (:name character)]
+                           character))
                          (.remove component panel)
                          (display-character-panel! component
                                                    character)
@@ -166,17 +166,14 @@
                                             1))]
                              (;; todo: baaaaaaaaad
                               (display-character
-                               (((read-string 
-                                  (slurp "/tmp/miaou.clj")) 
-                                 :drivers)
-                                name)))))))
+                               (((get-data) :drivers) name)))))))
     [panel, update-fn]))
 
 (defn run-race
   "JFrame -> ()
    Runs a race and displays it in the frame"
   [frame]
-  (let [characters (vals ((read-string (slurp "/tmp/miaou.clj")) :drivers))
+  (let [characters (vals ((get-data) :drivers))
         drivers (map froid.core/character->Driver characters)
         circuit (froid.circuit/random-circuit)
         drivers (sort-by :lap-time 
@@ -184,7 +181,9 @@
                               drivers))
         [panel update!] (froid.gui/create-gui characters)
         toto (fn toto [l drivers]
-               (update! (str "Lap " (inc l)) drivers)
+               (if (= l 49)
+                 (update! "Race results" drivers)
+                 (update! (str "Lap " (inc l)) drivers))
                (if (< l 49)
                  (let [timer (javax.swing.Timer. 1000
                                                  (proxy [java.awt.event.ActionListener] []
@@ -224,7 +223,7 @@
     (.addActionListener button-new
                         (proxy [java.awt.event.ActionListener] []
                           (actionPerformed [e]
-                            (spit "/tmp/miaou.clj" (init-all 7 3)))))
+                            (set-data! (init-all 7 3)))))
     (.addActionListener button-race
                         (proxy [java.awt.event.ActionListener] []
                           (actionPerformed [e]
