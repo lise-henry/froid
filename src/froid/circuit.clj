@@ -83,7 +83,7 @@
         (assoc drivers i 
                (assoc d1 :time 
                       (+ (:time d0)
-                         take-ratio)))))))
+                         (* 10 take-ratio))))))))
 
 (defn try-overtakes
   "Drivers -> Drivers

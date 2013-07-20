@@ -68,14 +68,14 @@
 
 (def ^:private default-character
   ;; Template stats for default character
-  {:speed-hard 0
-   :speed-soft 0
-   :speed-straight 0
-   :overtake 0
-   :block 0
-   :skill-qual 0
-   :skill-crash 0
-   :xp 30
+  {:speed-hard 1
+   :speed-soft 1
+   :speed-straight 1
+   :overtake 1
+   :block 1
+   :skill-qual 1
+   :skill-crash 1
+   :xp 0
    :points 0
    :victories 0})
 
