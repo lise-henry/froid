@@ -86,7 +86,7 @@
    :overtake #(Math/pow 0.95 %)
    :block #(Math/pow (/ 1.0 0.95) %)
    :skill-qual #(Math/pow 0.98 %)
-   :skill-crash #(Math/pow 0.95 %)})
+   :skill-crash #(Math/pow 0.9 %)})
 
 (def ^:private character-driver
   ;; same as previous, with name and team additional

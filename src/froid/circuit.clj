@@ -19,7 +19,7 @@
         soft (/ soft  total)
         hard (/ hard total)
         overtakes (rand-range 1 5)
-        security (rand-range 100 300)]
+        security (rand-range 50 100)]
     {:length length
      :straight straight
      :soft soft
@@ -69,7 +69,9 @@
              (:skill-crash driver))
         x (rand)]
     (if (< x p)
-      (assoc driver :alive? false)
+      (do
+        (println (:name driver) "crashed!")
+        (assoc driver :alive? false))
       driver)))
                 
              
