@@ -82,7 +82,7 @@
 ;;      possibility to raise them"""
      
 
-(defn display-character-panel!
+(defn- display-character-panel!
   "(Character, JPanel) -> ()
    Displays the driver stats in appropriate component"
   [component driver]
@@ -92,10 +92,11 @@
                      0))
         panel (javax.swing.JPanel.)
         layout (javax.swing.BoxLayout. panel javax.swing.BoxLayout/Y_AXIS)]
+    (.removeAll component)
     (.setLayout panel layout)
     (.add component panel)
     (doseq [[k v] driver]
-      (let [label (javax.swing.JLabel. (str k ": " v))]
+      (let [label (javax.swing.JLabel. (str (name k) ": " v))]
         (.add panel
               (if (and editable
                        (k character-driver-stats))
@@ -114,7 +115,6 @@
                            (get-data)
                            [:drivers (:name character)]
                            character))
-                         (.remove component panel)
                          (display-character-panel! component
                                                    character)
                          (.pack component)))))
@@ -125,7 +125,7 @@
                 label))))))
 
 (defn display-character
-  "Driver -> ()
+  "Character -> ()
    Display the driver's stats in a new window"
   [driver]
   (let [frame (javax.swing.JFrame. (:name driver))]
@@ -133,6 +133,30 @@
       (display-character-panel! driver)
       (.pack)
       (.setVisible true))))
+
+(defn display-player-characters
+  "() -> ()
+   Display a frame with the player's character and proposes to modify them"
+  []
+  (let [characters (filter :player (vals (:drivers (get-data))))
+        team (:team (first characters))
+        frame (javax.swing.JFrame. team)
+        outer-panel (javax.swing.JPanel.)
+        inner-panel (javax.swing.JPanel.)]
+    (doseq [c characters]
+      (let [button (javax.swing.JButton. (:name c))]
+        (.addActionListener button
+                            (proxy [java.awt.event.ActionListener] []
+                              (actionPerformed [e]
+                                (display-character-panel! inner-panel c)
+                                (.pack frame))))
+        (.add outer-panel button java.awt.BorderLayout/PAGE_START)))
+    (.add outer-panel inner-panel java.awt.BorderLayout/PAGE_END)
+    (doto frame
+      (.add outer-panel)
+      (.pack)
+      (.setVisible true))))
+  
 
 (defn create-gui
   "() -> (JPanel, (label, drivers) -> ()))
