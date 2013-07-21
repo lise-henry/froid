@@ -92,7 +92,6 @@
                      0))
         panel (javax.swing.JPanel.)
         layout (javax.swing.BoxLayout. panel javax.swing.BoxLayout/Y_AXIS)]
-    (.removeAll component)
     (.setLayout panel layout)
     (.add component panel)
     (doseq [[k v] driver]
@@ -115,6 +114,7 @@
                            (get-data)
                            [:drivers (:name character)]
                            character))
+                         (.remove component panel)
                          (display-character-panel! component
                                                    character)
                          (.pack component)))))
@@ -141,17 +141,14 @@
   (let [characters (filter :player (vals (:drivers (get-data))))
         team (:team (first characters))
         frame (javax.swing.JFrame. team)
-        outer-panel (javax.swing.JPanel.)
-        inner-panel (javax.swing.JPanel.)]
+        outer-panel (javax.swing.JPanel.)]
     (doseq [c characters]
       (let [button (javax.swing.JButton. (:name c))]
         (.addActionListener button
                             (proxy [java.awt.event.ActionListener] []
                               (actionPerformed [e]
-                                (display-character-panel! inner-panel c)
-                                (.pack frame))))
+                                (display-character c))))
         (.add outer-panel button java.awt.BorderLayout/PAGE_START)))
-    (.add outer-panel inner-panel java.awt.BorderLayout/PAGE_END)
     (doto frame
       (.add outer-panel)
       (.pack)
@@ -268,6 +265,7 @@
   (let [frame (javax.swing.JFrame. "FROID")
         button-race (javax.swing.JButton. "Run race")
         button-new (javax.swing.JButton. "New")
+        button-edit (javax.swing.JButton. "Edit drivers")
         panel (javax.swing.JPanel.)]
     (.addActionListener button-new
                         (proxy [java.awt.event.ActionListener] []
@@ -277,9 +275,14 @@
                         (proxy [java.awt.event.ActionListener] []
                           (actionPerformed [e]
                             (run-race frame))))
+    (.addActionListener button-edit
+                        (proxy [java.awt.event.ActionListener] []
+                          (actionPerformed [e]
+                            (display-player-characters))))
     (.add (.getContentPane frame) panel)
     (doto panel
       (.add button-new)
+      (.add button-edit)
       (.add button-race))
     (doto frame
      (.setDefaultCloseOperation javax.swing.JFrame/EXIT_ON_CLOSE)
